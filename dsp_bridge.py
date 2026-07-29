@@ -15,11 +15,9 @@ Total latency: <100ms (80ms DSP + 12ms ML + 8ms overhead)
 import zmq
 import json
 import time
-import struct
 import logging
 from dataclasses import dataclass
-from typing import Optional, Tuple
-from pathlib import Path
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DSPBridge")

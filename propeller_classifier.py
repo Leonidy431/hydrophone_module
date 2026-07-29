@@ -5,7 +5,7 @@ import numpy as np
 from scipy import signal
 from dataclasses import dataclass
 import logging
-from typing import Dict, Tuple
+from typing import Dict
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PropellerClassifier")

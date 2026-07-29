@@ -19,7 +19,7 @@ import numpy as np
 from scipy import signal
 from scipy.fftpack import fft
 from dataclasses import dataclass
-from typing import Tuple, Optional, List
+from typing import Tuple, List
 import logging
 import time
 
@@ -526,7 +526,7 @@ if __name__ == "__main__":
                f"entropy={result['layer3']['mean_entropy']:.2f}")
     logger.info(f"Layer 4 (Spatial):   propeller_score={result['layer4']['propeller_score']:.3f}")
     logger.info(f"Layer 5 (ML):        propeller_score={result['layer5']['propeller_score']:.3f}")
-    logger.info(f"\nLayer 6 (Bayesian Fusion):")
+    logger.info("\nLayer 6 (Bayesian Fusion):")
     logger.info(f"  Final Confidence: {result['final_confidence']:.3f}")
     logger.info(f"  Alert Level:      {result['alert_level']}")
     logger.info(f"  Processing Time:  {result['processing_time_ms']:.1f}ms")
