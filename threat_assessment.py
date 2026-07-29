@@ -1,7 +1,6 @@
 # threat_assessment.py
 # Модуль оценки уровня угрозы и расчета параметров столкновения
 
-import numpy as np
 from dataclasses import dataclass
 import logging
 from typing import Dict
@@ -84,7 +83,6 @@ class ThreatAssessmentEngine:
         risk_level = self._ttc_to_risk_level(time_to_collision)
         
         # Модуляция риска в зависимости от типа судна
-        vessel_factor = self.VESSEL_DANGER_FACTORS.get(vessel_type, 0.7)
         adjusted_risk = self._adjust_risk_by_vessel_type(
             risk_level, vessel_type, closing_speed, 
             vessel_classification.cavitation_level
@@ -249,14 +247,6 @@ class ThreatAssessmentEngine:
         else:
             direction = "слева (порт)"
         
-        # Определить вертикальное направление
-        if azimuth == 0:
-            vertical = "с поверхности"
-        elif azimuth == 180:
-            vertical = "снизу"
-        else:
-            vertical = ""
-        
         # Сгенерировать рекомендацию в зависимости от риска
         if risk_level >= 9:
             return f"⚠️⚠️ КРИТИЧНО! {vessel_type.upper()} закрывается {direction} со скоростью! УХОДИТЕ НЕМЕДЛЕННО!"
@@ -293,8 +283,7 @@ class ThreatAssessmentEngine:
         azimuth = threat_assessment.azimuth_deg
         elevation = threat_assessment.elevation_deg
         risk = threat_assessment.risk_level
-        distance = threat_assessment.distance_m
-        
+
         # Определить направление манёвра - ПРОТИВОПОЛОЖНОЕ угрозе
         evasion_yaw = (azimuth + 180) % 360  # Развернуться в противоположную сторону
         
@@ -376,7 +365,7 @@ if __name__ == "__main__":
     
     # Манёвр уклонения
     maneuver = engine.get_evasion_maneuver(assessment, robot_depth=50)
-    print(f"Манёвр уклонения:")
+    print("Манёвр уклонения:")
     print(f"  Поворот на азимут: {maneuver['desired_yaw']:.1f}°")
     print(f"  Наклон: {maneuver['desired_pitch']:.1f}°")
     print(f"  Целевая глубина: {maneuver['desired_depth']:.1f} м")

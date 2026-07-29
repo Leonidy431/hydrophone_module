@@ -4,7 +4,7 @@
 import numpy as np
 from scipy import signal
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict
 import logging
 
 logging.basicConfig(level=logging.INFO)

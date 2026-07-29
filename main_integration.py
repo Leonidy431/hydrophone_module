@@ -7,8 +7,8 @@ import logging
 from typing import Optional
 
 # Импортировать все модули
-from sensor_fusion import SensorFusionEngine, FusedState
-from propeller_classifier import PropellerSignatureClassifier, VesselClassification
+from sensor_fusion import SensorFusionEngine
+from propeller_classifier import PropellerSignatureClassifier
 from threat_assessment import ThreatAssessmentEngine, ThreatAssessment
 from diver_alert_controller import DiverAlertController
 

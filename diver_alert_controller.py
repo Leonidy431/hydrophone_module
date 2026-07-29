@@ -5,7 +5,7 @@ import time
 import numpy as np
 from dataclasses import dataclass
 import logging
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 from enum import Enum
 
 logging.basicConfig(level=logging.INFO)
