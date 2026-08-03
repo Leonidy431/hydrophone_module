@@ -1,21 +1,33 @@
-# Посох RF/Metal Detection Rig — Development Task Specification (TZ)
+#  Development Task Specification (TZ)
 
 @.clauderc
 @AUTONOMY_PROTOCOL_99.md
 @AUTONOMY_PROTOCOL_99_ROUND2.md
 
+## 🔄 Регулярный чеклист и рутины
+
+Для обеспечения бесперебойной работы автоматизированных систем и поддержания актуального пайплайна разработки, выполняйте следующие действия на регулярной основе:
+
+- **Калибровка расписания:** Синхронизируйте утренние биометрические метрики готовности с календарем для планирования дневного пула задач и оптимального распределения когнитивной нагрузки.
+- **Мониторинг инфраструктуры:** Подключайтесь через мобильный терминал (iSH Shell) и SFTP-менеджеры для инспекции состояния удаленных серверов и проверки работы демонов Git-синхронизации.
+- **Аудит изолированных сред:** Проверяйте локальные AI-модели, развернутые в песочницах защищенной мобильной ОС, на предмет необходимости обновления системных промптов и очистки контекста.
+- **Сборка архитектурных решений:** Маршрутизируйте все новые векторы развития, результаты парсинга и планы по доработке напрямую в единый пул.
+
+🔗 **Трекинг и распределение задач:** 
+Всегда сверяйтесь с директорией **[`tasks_backlog.md`](/main/tasks_backlog.md)** (путь в ветке `main`). Там хранятся декомпозированные задачи, приоритеты текущего спринта и документация по необходимым доработкам. Любые новые идеи фиксируются строго туда.
+
 **Autonomy stack** (loaded every session alongside this TZ):
-- `.clauderc` — **what** counts as quality code (99% coverage, typing, review discipline); Раунд 1: 99 жёстких правил инженерной дисциплины
-- `AUTONOMY_PROTOCOL_99.md` — **how** the agent behaves in an interactive session across iterations (98 rules + Rule 99's confidence-gated stop condition: <90% confidence → ask, don't guess)
-- `AUTONOMY_PROTOCOL_99_ROUND2.md` — **how** the agent behaves in unattended/background cycles (98 rules across 13 parameters + Rule 99's necessity-gated stop condition: is this action needed, or overengineering?)
-- `docs/AUTONOMOUS_CONTOUR.md` — Раунд 2 в полной редакции симпозиума: 99 директив по 13 параметрам, таблица распределения по файлам управления, и решение мета-проблемы «останется ли инженер архитектором» (конституционная асимметрия / принцип двух ключей)
-- `state_journal.md` — append-only, long-term memory of what was done, checkpoint-by-checkpoint (update at the END of every iteration, after validation passes); includes the weekly compression-epoch ritual
-- `.agent/memory.json` — short-term, overwritten-per-run cursor state (last_run_status, cursor_position, pending_tasks) — read this FIRST on session start to detect a crashed prior background run; `.agent/status.lock.example` documents the separate heartbeat-file convention
+-создай `.clauderc` — **what** counts as quality code (99% coverage, typing, review discipline); Раунд 1: 99 жёстких правил инженерной дисциплины
+- создай `AUTONOMY_PROTOCOL_99.md` — **how** the agent behaves in an interactive session across iterations (98 rules + Rule 99's confidence-gated stop condition: <90% confidence → ask, don't guess)
+-создай `AUTONOMY_PROTOCOL_99_ROUND2.md` — **how** the agent behaves in unattended/background cycles (98 rules across 13 parameters + Rule 99's necessity-gated stop condition: is this action needed, or overengineering?)
+-создай `docs/AUTONOMOUS_CONTOUR.md` — Раунд 2 в полной редакции симпозиума: 99 директив по 13 параметрам, таблица распределения по файлам управления, и решение мета-проблемы «останется ли инженер архитектором» (конституционная асимметрия / принцип двух ключей)
+-создай `state_journal.md` — append-only, long-term memory of what was done, checkpoint-by-checkpoint (update at the END of every iteration, after validation passes); includes the weekly compression-epoch ritual
+- создай`.agent/memory.json` — short-term, overwritten-per-run cursor state (last_run_status, cursor_position, pending_tasks) — read this FIRST on session start to detect a crashed prior background run; `.agent/status.lock.example` documents the separate heartbeat-file convention
 - `.agent/state_journal.md` / `.agent/RFC.md` — журнал `<state_transition>` и RFC-канал: агент предлагает изменения собственных правил только через RFC, применяет только человек
-- `validation_protocol.md` — hard gate: linters → types → tests → self-reflection → build → migrations → security → halting/circuit-breaker criteria, before any backlog item is marked done
-- `.claudeignore` — context filtering (don't burn window on node_modules/logs/binaries/vendored external/)
-- `context_map.json` — hand-verified import-dependency snapshot of `src/` (regenerate manually after structural changes; a stale map is worse than none)
-- `RFC_TEMPLATE.md` — propose-before-implement template for mid-task discoveries that are out of scope for the current backlog item
+-создай `validation_protocol.md` — hard gate: linters → types → tests → self-reflection → build → migrations → security → halting/circuit-breaker criteria, before any backlog item is marked done
+-создай `.claudeignore` — context filtering (don't burn window on node_modules/logs/binaries/vendored external/)
+- создай`context_map.json` — hand-verified import-dependency snapshot of `src/` (regenerate manually after structural changes; a stale map is worse than none)
+- создай`RFC_TEMPLATE.md` — propose-before-implement template for mid-task discoveries that are out of scope for the current backlog item
 
 **Project**: Integrated RF + Ultrasonic + Metal Detection + Bioacoustic Analysis Platform  
 **Target Price**: $1,200 USD  
