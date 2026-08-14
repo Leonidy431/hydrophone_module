@@ -138,8 +138,19 @@ class DEMONAlgorithm:
 
     @staticmethod
     def _design_hilbert_filter(num_taps: int = 65) -> np.ndarray:
-        """Design Hilbert transformer via scipy"""
-        return signal.hilbert(np.arange(num_taps))[np.newaxis, :].imag / np.arange(1, num_taps + 1, 2)
+        """Design 65-tap Hilbert transformer FIR filter for envelope extraction"""
+        # Create impulse response: h[n] = 2/(π*n) for n odd, 0 for n even
+        # Windowed with Hamming window for numerical stability
+        n = np.arange(num_taps, dtype=np.float32)
+        window = np.hamming(num_taps)
+
+        # Hilbert filter: impulse response at odd indices
+        h = np.zeros(num_taps, dtype=np.float32)
+        for i in range(num_taps):
+            if (num_taps // 2 - i) % 2 == 1:  # Odd symmetric positions
+                h[i] = 2.0 / (np.pi * (num_taps // 2 - i)) * window[i]
+
+        return h.astype(np.float32)
 
     def extract_envelope(self, power_spectrum: np.ndarray) -> np.ndarray:
         """
