@@ -141,7 +141,6 @@ class DEMONAlgorithm:
         """Design 65-tap Hilbert transformer FIR filter for envelope extraction"""
         # Create impulse response: h[n] = 2/(π*n) for n odd, 0 for n even
         # Windowed with Hamming window for numerical stability
-        n = np.arange(num_taps, dtype=np.float32)
         window = np.hamming(num_taps)
 
         # Hilbert filter: impulse response at odd indices
