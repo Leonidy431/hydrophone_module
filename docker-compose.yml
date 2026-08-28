@@ -1,0 +1,32 @@
+services:
+  diveguard:
+    build: .
+    image: diveguard:latest
+    container_name: diveguard
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8734:8734"
+    volumes:
+      - diveguard-wal:/data/wal
+      - diveguard-logs:/data/logs
+      # Real hydrophone: uncomment on the Pi
+      # - /dev/snd:/dev/snd
+    # devices:
+    #   - /dev/snd
+    mem_limit: 384m          # RPi3 has 1GB total; leave room for BlueOS core
+    cpus: 2.0
+    stop_grace_period: 90s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # MAVLink2REST on BlueOS host
+
+volumes:
+  diveguard-wal:
+  diveguard-logs:

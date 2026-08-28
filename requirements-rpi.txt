@@ -1,0 +1,11 @@
+# Minimal runtime deps actually imported by the codebase (RPi3 / ARMv7).
+# The legacy requirements.txt lists torch/tensorflow/librosa/ROS2 which are
+# NOT imported anywhere and are uninstallable or impractical on RPi3 —
+# see HLD blind-spot registry #1. Use this file for deployment images.
+numpy>=1.21.0,<2.0
+scipy>=1.7.0
+pyzmq>=25.0
+fastapi>=0.110
+uvicorn>=0.29
+# Optional hardware interface (real hydrophone via ALSA); wheel exists for armv7
+pyalsaaudio>=0.10 ; platform_machine in "armv7l aarch64"

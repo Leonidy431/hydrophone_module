@@ -7,8 +7,7 @@ import pytest
 import numpy as np
 import json
 import time
-from dataclasses import asdict
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 # Import modules under test
 from dsp_bridge import AudioFrame, DSPResult, ThermalCalibrationModule
@@ -727,7 +726,6 @@ class TestSensorFusionAdvanced:
 
     def test_fused_state_creation(self):
         """Test FusedState dataclass creation."""
-        from sensor_fusion import FusedState
 
         state = FusedState(
             distance=50.0,
@@ -770,7 +768,7 @@ class TestLatencyAndPerformance:
 
         start = time.time()
         for _ in range(1000):
-            frame = AudioFrame(samples=samples, timestamp_ms=0.0)
+            AudioFrame(samples=samples, timestamp_ms=0.0)
         elapsed = time.time() - start
 
         # Should create 1000 frames in < 0.1s
