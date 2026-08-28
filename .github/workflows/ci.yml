@@ -20,3 +20,15 @@ jobs:
         run: pip install ruff
       - name: Ruff lint (errors only)
         run: ruff check --select E9,F --output-format=github .
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install runtime + test deps
+        run: pip install -r requirements-rpi.txt pytest httpx
+      - name: Run test suites
+        run: python -m pytest test_dsp_core.py test_audio_wal.py test_blueos_extension.py -q

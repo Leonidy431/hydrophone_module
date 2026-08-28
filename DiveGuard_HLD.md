@@ -1665,3 +1665,54 @@ if (classifier.propeller_confidence > adjusted) {
 **Author**: Multi-disciplinary Engineering Team  
 **Date**: 2026-07-24  
 **Status**: ✅ APPROVED FOR IMPLEMENTATION
+
+---
+
+## 📐 HLD Addendum — Phase Status & Blind-Spots Registry (Audit 2026-08-28)
+
+**Trigger**: «разрешаю правки и дописать остальные модули… давай 12 остальных слепых зон» + RPi3/BlueOS deploy checklist. Full-code audit + implementation session on branch `claude/clone-read-repositories-sfx5lx`.
+
+### 12-Phase Status
+
+| Phase | Focus | Status | Artifact |
+|-------|-------|--------|----------|
+| 1 | I2S/ALSA acquisition | 🟡 Partial | `dsp_bridge.ALSAHydrophoneReader` (zero-frame stub issue — BS-8) |
+| 2 | Thermal calibration (Medwin) | ✅ Done | `ThermalCalibrationModule` + tests |
+| 3 | DSP core bridge (ZMQ) | ✅ Done | `DSPPipeline` — EFSM lockup fixed this session (BS-10) |
+| 4 | Adaptive threshold | ✅ Done | Unit bug fixed this session (BS-2), calibration constant pending field data |
+| 5 | Propeller classifier | ✅ Done | `propeller_classifier.py` + tests |
+| 6 | Threat assessment + fusion | 🟡 Partial | Engines exist; not wired into service loop (BS-11) |
+| 7 | Diver alerts | 🟡 Partial | Controller done; GPIO hardware = mocks (BS-12) |
+| 8 | Durability (ring buffer + WAL) | ✅ Done **this session** | `audio_wal.py`, 15 tests, atomic emergency flush |
+| 9 | BlueOS extension (HTTP+manifest) | ✅ Done **this session** | `blueos_extension.py`, `blueos-manifest.json`, 7 tests |
+| 10 | MAVLink STATUSTEXT | ✅ Done **this session** | `MavlinkNotifier` via MAVLink2REST, fail-soft |
+| 11 | Docker/RPi3 deploy | ✅ Done **this session** | `Dockerfile` (arm/v7), compose, entrypoint, .env |
+| 12 | CI + field validation | 🟡 Partial | pytest job added this session; field tests need hardware |
+
+### Blind-Spots Registry (12, all verified in code — not padded)
+
+| # | Blind spot | Severity | Status |
+|---|-----------|----------|--------|
+| BS-1 | `requirements.txt` lists torch+tensorflow+librosa+rclpy — none imported anywhere; rclpy is not pip-installable; set is uninstallable on RPi3 (1GB RAM) and breaks any clean-env install | 🔴 P0 | ✅ Fixed: `requirements-rpi.txt` (real deps only); legacy file kept as reference |
+| BS-2 | `AdaptiveThresholdModule`: dB-domain mean+2.5σ (≈40–80) clamped into score scale [0.60, 0.85] → adaptive threshold was a **constant 0.85**; adaptation was dead code | 🔴 P0 | ✅ Fixed: unitless z-score adjustment; `SENSITIVITY_PER_SIGMA=0.05` needs bay calibration (regression test added) |
+| BS-3 | MAVLink STATUSTEXT claimed in HLD Executive Summary but **zero** MAVLink code existed in the repo | 🔴 P0 | ✅ Fixed: `MavlinkNotifier` (MAVLink2REST, 2s timeout, fail-soft flag) |
+| BS-4 | No durability layer: every acquired frame lived only in Python objects; any crash/stop = total loss | 🔴 P0 | ✅ Fixed: `audio_wal.py` — bounded ring, watermark backpressure, atomic emergency flush (temp+fsync+rename), torn-tail-tolerant recovery |
+| BS-5 | No BlueOS integration surface at all: no HTTP server, no `/register_service`, no manifest — module could not be installed as an extension | 🔴 P0 | ✅ Fixed: FastAPI service + manifest; acquisition в executor-потоке, event loop не блокируется |
+| BS-6 | No SIGTERM handling anywhere → `docker stop` / power events lose the ring buffer | 🔴 P0 | ✅ Fixed: phased shutdown (stop intake → drain ≤55s → fsync) внутри 90s `stop_grace_period` |
+| BS-7 | CI ran **syntax check only** (`py_compile` + ruff E9,F) — the 825-line, 60-test suite never executed in CI | 🔴 P0 | ✅ Fixed: pytest job added to `ci.yml` |
+| BS-8 | `ALSAHydrophoneReader.read_frame()` fabricates silent zero-frames when pyalsaaudio is absent — mock-in-prod; fake silence неотличима от реальной; на потере сенсора нет reconnect/backoff | 🟠 P1 | 🟡 Mitigated: extension layer flags `sensor_ok`/degraded + exponential backoff; reader-level fail-loud refactor pending (needs decision: raise vs degraded-flag contract) |
+| BS-9 | `frame_timestamp_ms` derived purely from sample count — ALSA overruns silently skip wall-clock time, таймстемпы дрейфуют; overrun не детектируется | 🟠 P1 | 📋 Documented; needs real-hardware overrun instrumentation to fix honestly |
+| BS-10 | ZMQ REQ socket: after first `RCVTIMEO` timeout the socket stays in send-state → every later `send_json` raises EFSM; **pipeline permanently dead after one DSP-core hiccup** | 🔴 P0 | ✅ Fixed: `REQ_RELAXED`+`REQ_CORRELATE`+`SNDTIMEO`+`LINGER 0` |
+| BS-11 | `main_integration.DiveGuardPropellerDetector` (threat assessment + EKF fusion) is instantiated **only** by `run_simulation()` — no production path ever wired sensors→fusion→alerts | 🟠 P1 | 🟡 Partial: extension wires reader→DSP→detections→MAVLink; fusion/threat engines still un-wired (Phase 6 follow-up) |
+| BS-12 | `diver_alert_controller` drives `MockUltrasonicSpeaker`/`MockLEDStrip` in the production path — alert hardware is entirely simulated; no GPIO backend exists | 🟠 P1 | 📋 Documented; real backend needs pin mapping from the (not yet existing) alert-hardware BOM |
+
+**Session result**: 8/12 fixed or mitigated, 4 documented with concrete unblock conditions. Tests: 81 passed, 1 skipped (60 legacy + 21 new). Deploy set: `Dockerfile` (arm/v7, non-root, healthcheck), `docker-compose.yml` (`restart: unless-stopped`, `mem_limit: 384m`, json-file log rotation 3×10MB), `entrypoint.sh`, `.env.example`, `requirements-rpi.txt`, `blueos-manifest.json`.
+
+**Быстрый деплой на борту (RPi3)**:
+```bash
+git clone https://github.com/leonidy431/hydrophone_module && cd hydrophone_module
+cp .env.example .env
+docker compose up -d --build     # либо buildx --platform linux/arm/v7 с другой машины
+docker logs -f diveguard         # JSON-логи, ротация настроена
+curl http://localhost:8734/v1/health
+```

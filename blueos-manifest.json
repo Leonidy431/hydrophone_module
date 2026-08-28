@@ -1,0 +1,34 @@
+{
+  "name": "DiveGuard Propeller Detector",
+  "identifier": "npo-lab-k.diveguard",
+  "description": "Hydroacoustic propeller detection (LOFAR/DEMON) with diver alerts and MAVLink STATUSTEXT integration",
+  "icon": "mdi-waveform",
+  "company": {
+    "about": "NPO Laboratoria K",
+    "name": "NPO Laboratoria K",
+    "email": "lab767@gmail.com"
+  },
+  "type": "device-integration",
+  "tags": ["sonar", "hydrophone", "safety", "acoustic"],
+  "images": [
+    {
+      "platform": "linux/arm/v7",
+      "expanded_size": 180000000,
+      "compatible": true
+    },
+    {
+      "platform": "linux/arm64",
+      "expanded_size": 180000000,
+      "compatible": true
+    }
+  ],
+  "permissions": {
+    "ExposedPorts": {"8734/tcp": {}},
+    "HostConfig": {
+      "Binds": ["/usr/blueos/extensions/diveguard:/data"],
+      "PortBindings": {"8734/tcp": [{"HostPort": ""}]},
+      "Memory": 402653184,
+      "CpuQuota": 200000
+    }
+  }
+}

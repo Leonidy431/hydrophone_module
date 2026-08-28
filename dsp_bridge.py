@@ -112,9 +112,22 @@ class AdaptiveThresholdModule:
     Target: <5% false positive rate
     """
 
+    # Bug fix (audit 2026-08-28): the previous implementation clamped a
+    # dB-domain quantity (mean_power + 2.5σ, typically 40-80 dB) into the
+    # 0-1 propeller-score scale [0.60, 0.85], so the "adaptive" threshold
+    # was a constant 0.85 for any realistic input. The threshold consumers
+    # compare against propeller_score (0-1), so adaptation must stay
+    # unitless: we track the dB noise floor separately and raise the score
+    # threshold by a bounded amount when current noise sits far above its
+    # own baseline (z-score). SENSITIVITY_PER_SIGMA needs bay calibration
+    # against real FP-rate data — see HLD blind-spot registry.
+
+    SENSITIVITY_PER_SIGMA = 0.05  # score increase per +1σ noise excess
+
     def __init__(self, baseline_window_size: int = 3600):
+        from collections import deque
         self.baseline_window_size = baseline_window_size  # 3600 = 1 hour
-        self.background_power_samples = []
+        self.background_power_samples = deque(maxlen=baseline_window_size)
         self.fixed_threshold = 0.70
         self.adaptive_threshold = self.fixed_threshold
 
@@ -122,25 +135,37 @@ class AdaptiveThresholdModule:
         """Accumulate background noise measurements"""
         self.background_power_samples.append(max_bpf_power_db)
 
-        if len(self.background_power_samples) > self.baseline_window_size:
-            self.background_power_samples.pop(0)
+        if len(self.background_power_samples) >= min(
+                self.baseline_window_size, 100):
             self._recalibrate_threshold()
 
-    def _recalibrate_threshold(self):
-        """Adaptive calibration based on baseline"""
-        if not self.background_power_samples:
-            return
-
+    def get_noise_floor_db(self) -> Optional[float]:
+        """Mean background BPF power in dB (None until warmed up)."""
+        if len(self.background_power_samples) < 2:
+            return None
         import statistics
-        mean_power = statistics.mean(self.background_power_samples)
-        stdev = statistics.stdev(self.background_power_samples) if len(self.background_power_samples) > 1 else 0.0
+        return statistics.mean(self.background_power_samples)
 
-        # Threshold = mean + 2.5×stdev (covers ~98% of background)
-        self.adaptive_threshold = min(mean_power + 2.5 * stdev, 0.85)
-        self.adaptive_threshold = max(self.adaptive_threshold, 0.60)
+    def _recalibrate_threshold(self):
+        """Adaptive calibration: unitless z-score of the most recent noise
+        sample against the rolling baseline, mapped to a bounded score
+        threshold in [0.60, 0.85]."""
+        import statistics
+        samples = self.background_power_samples
+        mean_power = statistics.mean(samples)
+        stdev = statistics.stdev(samples) if len(samples) > 1 else 0.0
 
-        logger.info(f"Recalibrated threshold: {self.adaptive_threshold:.3f} "
-                   f"(mean={mean_power:.1f}dB, σ={stdev:.1f}dB)")
+        if stdev > 0.0:
+            z_now = (samples[-1] - mean_power) / stdev
+        else:
+            z_now = 0.0
+
+        raw = self.fixed_threshold + self.SENSITIVITY_PER_SIGMA * max(0.0, z_now)
+        self.adaptive_threshold = min(max(raw, 0.60), 0.85)
+
+        logger.debug(f"Recalibrated threshold: {self.adaptive_threshold:.3f} "
+                     f"(noise_floor={mean_power:.1f}dB, σ={stdev:.1f}dB, "
+                     f"z={z_now:.2f})")
 
     def get_threshold(self) -> float:
         """Get current detection threshold"""
@@ -157,8 +182,7 @@ class DSPPipeline:
     def __init__(self, dsp_server_endpoint: str = "ipc:///tmp/diveguard_dsp.ipc"):
         self.endpoint = dsp_server_endpoint
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.RCVTIMEO, 5000)  # 5s timeout
+        self.socket = self._make_socket()
 
         self.thermal_calibration = ThermalCalibrationModule()
         self.adaptive_threshold = AdaptiveThresholdModule()
@@ -167,6 +191,19 @@ class DSPPipeline:
         self.start_time = time.time()
 
         logger.info(f"DSP Pipeline initialized, endpoint={dsp_server_endpoint}")
+
+    def _make_socket(self):
+        """REQ socket hardened against the EFSM lockup: after a recv
+        timeout a plain REQ socket is stuck in 'expecting reply' state and
+        every further send raises EFSM. REQ_RELAXED + REQ_CORRELATE let us
+        re-send after a timeout instead of recreating the socket."""
+        sock = self.context.socket(zmq.REQ)
+        sock.setsockopt(zmq.RCVTIMEO, 5000)  # 5s timeout
+        sock.setsockopt(zmq.SNDTIMEO, 5000)
+        sock.setsockopt(zmq.REQ_RELAXED, 1)
+        sock.setsockopt(zmq.REQ_CORRELATE, 1)
+        sock.setsockopt(zmq.LINGER, 0)
+        return sock
 
     def connect(self):
         """Connect to C++ DSP server"""
